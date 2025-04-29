@@ -1,5 +1,5 @@
 
-export Lexicon, lexicon, Term, create_preimage_in
+export Lexicon, lexicon, Term, create_preimage_in, reverse_dict, replace_with!
 
 
 function reverse_dict(d::Dict)
@@ -30,6 +30,19 @@ end
 
 function Base.show(io::IO, l::Lexicon)
   println(io, "Lexicon with $(length(l.predicates)) predicates")
+end
+
+
+function Base.isequal(l1::Lexicon,l2::Lexicon)
+    return l1.predicates == l2.predicates && l1.labels == l2.labels && l1.coefficient_ring == l2.coefficient_ring
+end
+
+function Base.:(==)(l1::Lexicon,l2::Lexicon)
+    return l1.predicates == l2.predicates && l1.labels == l2.labels && l1.coefficient_ring == l2.coefficient_ring
+end
+
+function Base.hash(l::Lexicon, h::UInt)
+  return hash(l.predicates, hash(l.labels, hash(l.coefficient_ring,h)))
 end
 
 
@@ -215,7 +228,22 @@ function create_preimage_in(L::Lexicon, v::Vector{Vector}, coeff::Number; filter
   return create_preimage_in(L, v, coeff, filter=filter)
 end
 
+"""
+  
+Example:
+```julia
+L1 = lexicon([[1],[2],[3],["g"]])
+L2 = lexicon([[1],[2],["g"],[3]])
 
+L = L1 * L2
+s1 = create_preimage_in(L, [[2,3,:g],[2,3,:g]], 1);
+d1 = create_preimage_in(L, [[2,3,:g],[3,:g]], -1);
+s1+d1 #Should delete most.
+
+
+```
+
+"""
 function Base.:+(t1::Term, t2::Term)
   @assert t1.L == t2.L "Lexicons do not match"
     new_pairs = copy(t1.pairs)
@@ -233,4 +261,107 @@ function Base.:+(t1::Term, t2::Term)
   end
   return Term(t1.L, new_pairs)
 end
+
+"""
+  
+Example:
+```julia
+L1 = lexicon([[1],[2],[3],["g"]])
+L2 = lexicon([[1],[2],["g"],[4]])
+
+L = L1 * L2
+s1 = create_preimage_in(L, [[2,3,:g],[2,4,:g]], 1);
+d1 = create_preimage_in(L, [[2,3,:g],[2,:g]], -1);
+s1+d1 #Should delete most.
+
+t1 = create_preimage_in(L1,[[2,:g]],1)
+t2 = create_preimage_in(L2,[[2,:g]],1)
+L_new = (t1*t2).L
+L_new == L
+
+vnew  = vcat(L.predicates[s1.pairs[1][2]],L.predicates[d1.pairs[1][2]])
+```
+"""
+function Base.:*(t1::Term, t2::Term)
+    new_lex = t1.L * t2.L
+    new_pairs = Tuple{RingElem,Int}[]
+    sizehint!(new_pairs,length(t1.pairs)*length(t2.pairs))
+
+    rev_dict1 = reverse_dict(t1.L.labels)
+    rev_dict2 = reverse_dict(t2.L.labels)
+
+    for p1 in t1.pairs
+      c1 = p1[1]
+      v1 = [ new_lex.labels[rev_dict1[i]] for i in t1.L.predicates[p1[2]]]
+      for p2 in t2.pairs
+        c2 = p2[1]
+        v2 = [ new_lex.labels[rev_dict2[i]] for i in t2.L.predicates[p2[2]]]
+        i = findfirst(x -> x==vcat(v1,v2),new_lex.predicates)
+        isnothing(i) && error("Stuff went badly wrong")
+
+        push!(new_pairs,(c1*c2,i))
+      end
+    end
+    return Term(new_lex,new_pairs) 
+end
+
+
+"""
+Example:
+
+v = [1,2,3,7,4]
+replacement = [10,12,13]
+to_replace = 7
+i = 4
+_replace_number(v,i,to_replace,replacement)
+"""
+function _replace_number(v::Vector{Int}, i::Int, to_replace::Int, replacement::Vector{Int})
+  new_v = Vector{Int}[]
+  if v[i] == to_replace
+    for r in replacement
+        temp_v = copy(v)
+        temp_v[i] = r
+        push!(new_v,temp_v)
+    end
+  end
+  return new_v
+end
+
+"""
+
+Example:
+
+L1 = lexicon([[1],[2],[3],["g"]])
+L2 = lexicon([[1],[2],["g"],[4],["INDEX"]])
+
+L = L1 * L2
+
+s1 = create_preimage_in(L, [[2,3,:g],[:INDEX]], 1);
+replace_with!(2,"INDEX",[1,2],s1)
+
+"""
+
+function replace_with!(i::Int, letter::String, replacement::Vector{Int},t::Term)
+  L = t.L
+  @assert haskey(L.labels,letter)
+  letter_index = L.labels[letter]
+  new_pairs = typeof(t.pairs)()
+  for p in t.pairs
+    pred = L.predicates[p[2]]
+    if pred[i] == letter_index
+      new_preds = _replace_number(pred,i,letter_index,replacement)
+      for new_pred in new_preds
+        i = findfirst(L.predicates,new_pred)
+        push!(new_pairs,(p[1],i))
+      end
+    else
+      push!(new_pairs,p)
+    end
+  end
+  t.pairs = new_pairs
+  return t
+end
+
+
+
 
