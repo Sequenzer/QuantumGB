@@ -1,5 +1,5 @@
 
-export Lexicon, lexicon, Term, create_preimage_in, reverse_dict, replace_with!
+export Lexicon, lexicon, Term, create_preimage_in, reverse_dict, replace_with!, unified_lexicon
 
 
 function reverse_dict(d::Dict)
@@ -56,7 +56,7 @@ Example:
 ```julia
 L1 = lexicon([[1],[2],[3],[-4]])
 L2 = lexicon([[1],[2],[3],["g"]])
-
+@code_warntype lexicon([[1],[2],[3],["g"]])
 ```
 """
 function lexicon(v::Vector{Vector{Int}}, dct::Dict{String,Int}, coeff_ring::Ring=QQ[:n][1])
@@ -309,12 +309,17 @@ end
 """
 Example:
 
+```julia
 v = [1,2,3,7,4]
 replacement = [10,12,13]
 to_replace = 7
 i = 4
 _replace_number(v,i,to_replace,replacement)
+```
 """
+
+
+
 function _replace_number(v::Vector{Int}, i::Int, to_replace::Int, replacement::Vector{Int})
   new_v = Vector{Int}[]
   if v[i] == to_replace
@@ -324,35 +329,44 @@ function _replace_number(v::Vector{Int}, i::Int, to_replace::Int, replacement::V
         push!(new_v,temp_v)
     end
   end
+
   return new_v
 end
 
 """
 
 Example:
-
+```julia
 L1 = lexicon([[1],[2],[3],["g"]])
 L2 = lexicon([[1],[2],["g"],[4],["INDEX"]])
 
 L = L1 * L2
 
-s1 = create_preimage_in(L, [[2,3,:g],[:INDEX]], 1);
-replace_with!(2,"INDEX",[1,2],s1)
+s1 = create_preimage_in(L, [[2,3,:g],[:INDEX]], 1)
+replace_with!(2,"INDEX",["1","2","g"],s1)
+```
+# rwel23
 
+```julia
+rwelij = create_preimage_in(L,[[:INDEX_K],[2],[:INDEX_J],[3,:g]],1)
+
+
+```
 """
-
-function replace_with!(i::Int, letter::String, replacement::Vector{Int},t::Term)
+function replace_with!(i::Int, letter::String, replacement::Vector{String},t::Term)
   L = t.L
   @assert haskey(L.labels,letter)
   letter_index = L.labels[letter]
   new_pairs = typeof(t.pairs)()
+  replacement = Int[L.labels[x] for x in replacement]
   for p in t.pairs
     pred = L.predicates[p[2]]
-    if pred[i] == letter_index
+    
+    if length(pred) >= i && pred[i] == letter_index
       new_preds = _replace_number(pred,i,letter_index,replacement)
       for new_pred in new_preds
-        i = findfirst(L.predicates,new_pred)
-        push!(new_pairs,(p[1],i))
+        j = findfirst(x->x==new_pred,L.predicates)
+        push!(new_pairs,(p[1],j))
       end
     else
       push!(new_pairs,p)
@@ -362,6 +376,50 @@ function replace_with!(i::Int, letter::String, replacement::Vector{Int},t::Term)
   return t
 end
 
+function _get_permutations(v::Vector)
+  length(v) == 1 && return [v] 
+  [vcat(v[i], p) for i in 1:length(v) for p in _get_permutations(vcat(v[1:i-1],v[i+1:end]))]
+end
+
+function _get_subsets(A::Vector, n::Int)
+    n == 0 && return [[]]
+    [vcat(A[i], subset) for i in 1:length(A) for subset in _get_subsets(A, n-1)]
+end
 
 
+#= Example usage:
+v = [[1], [2], [3], [:g]]
+L =unified_lexicon(v,6)
 
+=#
+function unified_lexicon(predicates::Vector,deg::Int,only_even::Bool=true)
+  L = lexicon(predicates)
+  new_preds=Vector{Int}[]
+  A = collect(1:length(L.labels))
+
+  for d in 1:deg
+    only_even && d % 2 != 0 && continue
+    append!(new_preds,_get_subsets(A,d))
+  end
+  L.predicates = new_preds
+  return L
+end
+
+#=
+Example rwel
+
+v = [[1], [2], [3], [:g], [:INDEX_J],[:INDEX_K]]
+L =unified_lexicon(v,4)
+
+rweljk = create_preimage_in(L,[[2],[:INDEX_J],[3,:g],[:INDEX_K]],1)
+rweljk += create_preimage_in(L,[[3,:g],[:INDEX_J],[1],[:INDEX_K]],-1)
+rweljk += create_preimage_in(L,[[1],[:INDEX_K]],1)
+rweljk += create_preimage_in(L,[[2],[:INDEX_J]],-1)
+
+# Now replace :INDEX_J with [2,3,:g]
+
+replace_with!(2,"INDEX_J",["2","3","g"],rweljk)
+replace_with!(2,"INDEX_K",["2","3","g"],rweljk)
+replace_with!(4,"INDEX_K",["2","3","g"],rweljk)
+
+=#
