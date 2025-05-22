@@ -3,7 +3,7 @@
 export Term,
   create_preimage_in,
   replace_with!,
-  filter_index!
+  filter_index
 
 
 mutable struct Term
@@ -199,7 +199,7 @@ Example:
 L = groebner_lexicon(4,4).L
 
 s1 = create_preimage_in(L, [[2,3,:g],["INDEX1"]], 1)
-replace_with!(s1,2,"INDEX1",["1","2","g"])
+replace_with!(s1,2,"INDEX1",["1","2","g"],[1])
 ```
 # rwel23
 
@@ -209,17 +209,25 @@ rwelij = create_preimage_in(L,[[:INDEX_K],[2],[:INDEX_J],[3,:g]],1)
 
 ```
 """
-function replace_with!(t::Term, i::Int, letter::String, replacement::Vector{String}, filter::Vector{Tuple{Int,Int}})
+function replace_with!(
+  t::Term,
+  i::Int,
+  letter::String,
+  replacement::Vector{String}, 
+  filter::Vector{Int}=Int[])
   L = t.L
   @assert haskey(L.labels,letter)
   letter_index = L.labels[letter]
+  g_index = L.labels["g"]
   new_pairs = typeof(t.pairs)()
   replacement = Int[L.labels[x] for x in replacement]
   for p in t.pairs
     pred = L.predicates[p[2]]
-    
     if length(pred) >= i && pred[i] == letter_index
       new_preds = _replace_number(pred,i,letter_index,replacement)
+      for f in filter
+        new_preds = filter_index(new_preds,i,f,g_index,L.labels["g⩓≠i$(f)"])
+      end
       for new_pred in new_preds
         j = findfirst(x->x==new_pred,L.predicates)
         push!(new_pairs,(p[1],j))
@@ -232,11 +240,18 @@ function replace_with!(t::Term, i::Int, letter::String, replacement::Vector{Stri
   return t
 end
 
-function replace_with!(t::Term, i::Int, letter::String, replacement::Vector{String}, filter::Vector{Tuple{Int,Int}})
-  replace_with!(t,i,letter,replacement)
-  for p in filter
-    filter_index!(t,p[1],p[2])
+function replace_with!(
+  t::Term,
+  letter::String,
+  replacement::Vector{String}, 
+  filter::Vector{Tuple{Int,Int}}=Tuple{Int,Int}[])
+  n = maximum([length(t.L.predicates[p[2]]) for p in t.pairs])
+
+  for i in 1:n
+    filter_1 = [x[2] for x in filter if x[1] == i]
+    t=replace_with!(t,i,letter,replacement,filter_1)
   end
+
   return t
 end
 
@@ -259,32 +274,30 @@ replace_with!(s1,2,"INDEX1",["1","2","g"],[(2,1)])
 filter_index!(s1,2,1)
 =#
 
-function filter_index!(t::Term, i::Int, target::Int)
+function filter_index(v::Vector{Vector{Int}},
+  i::Int,
+  target::Int,
+  g_index::Int,
+  g_filter::Int)
   @assert target < i "You can only filter with smaller index"
-  L = t.L
-  @assert haskey(L.labels,"g") "generic key required"
-  @assert haskey(L.labels,"g⩓≠i$(target)") "generic filtered Key required"
-  g_index = L.labels["g"]
-  g_target_filter = L.labels["g⩓≠i$(target)"]
-  new_pairs = typeof(t.pairs)()
+  new_pairs = Vector{Int}[]
   #sizehint!(new_pairs,length(t.pairs))
-  for p in t.pairs
-    pred = L.predicates[p[2]]
+  for pred in v
     if pred[i] != g_index
       pred[i] == pred[target] && continue
-      push!(new_pairs,p)
+      push!(new_pairs,pred)
     elseif pred[target] != g_index
-      push!(new_pairs,p)
+      push!(new_pairs,pred)
     else
       new_pred = copy(pred)
-      new_pred[i] = g_target_filter
-      new_idx = findfirst(x->x==new_pred,L.predicates)
-      push!(new_pairs,(p[1],new_idx))
+      new_pred[i] = g_filter
+      push!(new_pairs,new_pred)
     end
   end
-  t.pairs = new_pairs
-  return t
+  return new_pairs
 end
+
+
 
 
 
@@ -297,7 +310,6 @@ v = [[1], [2], [3], [:g]]
 #=
 Example rwel
 
-v = [[1], [2], [3], [:g], [:INDEX_J],[:INDEX_K]]
 L = groebner_lexicon(4,4).L
 
 rweljk = create_preimage_in(L,[[2],[:INDEX1],[3,:g],[:INDEX2]],1)
@@ -307,8 +319,7 @@ rweljk += create_preimage_in(L,[[2],[:INDEX1]],-1)
 
 # Now replace :INDEX_J with [2,3,:g]
 
-replace_with!(2,"INDEX1",["2","3","g"],rweljk)
-replace_with!(2,"INDEX2",["2","3","g"],rweljk)
-replace_with!(4,"INDEX2",["2","3","g"],rweljk)
+replace_with!(rweljk,"INDEX1",["2","3","g"])
+replace_with!(rweljk,"INDEX2",["2","3","g"])
 
 =#
