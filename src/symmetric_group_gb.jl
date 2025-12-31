@@ -36,22 +36,24 @@ function _magic_unitary_symbols(n::Int=4)
   for i in 1:n
     for j in 1:n
       if i > 9 || j > 9
-        u[i, j] = "u$(_index_number(i))₋$(_index_number(j))"
+        u[i, j] = "u$(_index_number(j))₋$(_index_number(i))"
       else
-        u[i, j] = "u$(_index_number(i))$(_index_number(j))"
+        u[i, j] = "u$(_index_number(j))$(_index_number(i))"
       end
     end
   end
   return u
 end
 
+
+##dangerous change to fix to correct order
 function magic_unitary(n::Int=4; fancy=true)
-  if fancy
-    _, u = free_associative_algebra(QQ, _magic_unitary_symbols(n))
-  else
-    _, u = free_associative_algebra(QQ, :u => (1:n, 1:n))
+  U = [Symbol("u[$(j), $(i)]") for i in 1:n, j in 1:n]
+  if fancy 
+    U = _magic_unitary_symbols(n)
   end
-  return u
+  _, u = free_associative_algebra(QQ, U)
+  return transpose(u)
 end
 
 Base.length(A::FreeAssociativeAlgebraElem) = length(A.S)
