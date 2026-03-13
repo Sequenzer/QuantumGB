@@ -320,6 +320,7 @@ I1.gb = I1.gens
 
 
 
+
 groebner_basis(I0)
 
 
@@ -333,6 +334,24 @@ srinj_ids = [Symbol("srinj$a$k$j$x$y") for (a,k,j,x,y) in iter];
 add!(E1, srinj, srinj_names, srinj_ids)
 
 comm1 = u[4,5]*u[3,3] - u[3,3]*u[4,5]
+
+n = 5
+S = quantum_symmetric_group(5)
+R = base_ring(S)
+G1 = groebner_basis(gens(S),algorithm=:buchberger)
+f = R[4]*R[3] - R[3]*R[4]
+normal_form(f, G1)
+rem = []
+zeros = []
+for (i,j) in Iterators.product(1:n^2, 1:n^2)
+  f = R[i]*R[j] - R[j]*R[i]
+  r,v = normal_form_with_rep(f, G1)
+  if !iszero(r)
+    push!(rem, f)
+  else
+    push!(zeros, f)
+  end
+end
 
 
 

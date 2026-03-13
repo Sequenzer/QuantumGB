@@ -1,0 +1,11 @@
+#!/bin/bash --login
+#SBATCH --job-name=taylor2
+#SBATCH --output=out/taylor2.out
+#SBATCH --time=168:00:00  
+#SBATCH --mem=1000G
+#SBATCH --mail-user=wack@math.tu-berlin.de
+#SBATCH --mail-type=BEGIN,END,FAIL
+
+export JULIA_NUM_PRECOMPILE_TASKS=1
+unset LD_LIBRARY_PATH 
+JULIA_DEPOT_PATH=$TMPDIR/julia julia-1.12 -e "using Pkg; Pkg.activate(\"../\",io=devnull); Pkg.instantiate(io=devnull); include(\"./taylor_qAut.jl\");"

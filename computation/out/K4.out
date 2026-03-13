@@ -1,0 +1,12 @@
+┌ Warning: Assignment to `i` in soft scope is ambiguous because a global variable by the same name exists: `i` will be treated as a new local. Disambiguate by using `local i` to suppress this warning or `global i` to assign to the existing global variable.
+└ @ ~/Documents/UniStuff/QuantumGB/computation/K4.jl:99
+ERROR: LoadError: UndefVarError: `i` not defined in local scope
+Suggestion: check for an assignment to a local variable that shadows a global of the same name.
+Stacktrace:
+ [1] top-level scope
+   @ ~/Documents/UniStuff/QuantumGB/computation/K4.jl:98
+ [2] include(fname::String)
+   @ Main ./sysimg.jl:38
+ [3] top-level scope
+   @ none:1
+in expression starting at /homes/combi/wack/Documents/UniStuff/QuantumGB/computation/K4.jl:96

@@ -1,0 +1,15 @@
+#!/bin/bash --login
+#SBATCH --job-name=M%a
+#SBATCH --array=1-2:1
+#SBATCH --output=out/M%a_out.out
+#SBATCH --time=168:00:00  
+#SBATCH --mem=1000G
+#SBATCH --mail-user=wack@math.tu-berlin.de
+#SBATCH --mail-type=BEGIN,END,FAIL
+
+export JULIA_NUM_PRECOMPILE_TASKS=1
+unset LD_LIBRARY_PATH 
+JULIA_DEPOT_PATH=$TMPDIR/julia julia-latest -e "using Pkg; Pkg.activate(\"../\",io=devnull); Pkg.instantiate(io=devnull); n=$SLURM_ARRAY_TASK_ID; include(\"./realization_comp.jl\");"
+
+
+

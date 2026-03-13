@@ -1,0 +1,17 @@
+ERROR: LoadError: A field or characteristic must be specified
+Stacktrace:
+ [1] error(s::String)
+   @ Base ./error.jl:35
+ [2] realization(RS::Oscar.MatroidRealizationSpace{ZZRing, ZZRing})
+   @ Oscar /scratch/wack/21320/julia/packages/Oscar/5kSAT/experimental/MatroidRealizationSpaces/src/realization_space.jl:541
+ [3] realization(M::Matroid; B::Nothing, saturate::Bool, simplify::Bool, char::Nothing, q::Nothing)
+   @ Oscar /scratch/wack/21320/julia/packages/Oscar/5kSAT/experimental/MatroidRealizationSpaces/src/realization_space.jl:529
+ [4] realization(M::Matroid)
+   @ Oscar /scratch/wack/21320/julia/packages/Oscar/5kSAT/experimental/MatroidRealizationSpaces/src/realization_space.jl:519
+ [5] top-level scope
+   @ ~/Documents/UniStuff/QuantumGB/computation/realization_comp.jl:6
+ [6] include(fname::String)
+   @ Main ./sysimg.jl:38
+ [7] top-level scope
+   @ none:1
+in expression starting at /homes/combi/wack/Documents/UniStuff/QuantumGB/computation/realization_comp.jl:6

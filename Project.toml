@@ -1,7 +1,7 @@
 name = "QuantumGB"
 uuid = "e6efa0c5-1cd0-4528-bbb2-cf1d4bca138c"
-authors = ["Marcel Wack <wac.marcel@gmail.com>"]
 version = "0.1.0"
+authors = ["Marcel Wack <wac.marcel@gmail.com>"]
 
 [deps]
 Oscar = "f1435218-dba5-11e9-1e4d-f1a5fab5fc13"
@@ -9,4 +9,5 @@ ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [compat]
+Oscar = "1.8.0"
 ProgressMeter = "1.10.2"

@@ -1,0 +1,2 @@
+/var/spool/slurmd/job26297/slurm_script: line 11: 492628 Killed                  JULIA_DEPOT_PATH=$TMPDIR/julia julia-1.11 -e "using Pkg; Pkg.activate(\"../\",io=devnull); Pkg.instantiate(io=devnull); include(\"./bernd2.jl\");"
+slurmstepd: error: Detected 1 oom_kill event in StepId=26297.batch. Some of the step tasks have been OOM Killed.

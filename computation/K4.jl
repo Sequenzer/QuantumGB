@@ -62,18 +62,25 @@ A = QQMPolyRingElem[zero(R) -one(R) one(R); one(R) zero(R) -one(R); -one(R) one(
 
 F = QQMPolyRingElem[one(R) zero(R) zero(R); zero(R) one(R) zero(R); zero(R) zero(R) one(R)];
 #=
-u11 = one(R)
-w11 = 2*one(R)
-U = QQMPolyRingElem[one(R),-20*one(R), -15*one(R),
-15*one(R),one(R),20*one(R),
--15*one(R),20*one(R),one(R)];
-U = reshape(U,(3,3));
-U = transpose(U);
-W = QQMPolyRingElem[one(R),-2*one(R),3*one(R),
--3*one(R),one(R),2*one(R),
-3*one(R),2*one(R),one(R)];
-W = reshape(W,(3,3));
-W = transpose(W);
+using Oscar
+R, UU, WW, z = free_associative_algebra(QQ, :U => (1:3, 1:3), :W=> (1:3, 1:3), :z=> 1:binomial(6,3))
+U = [i==j ? one(R) : UU[i,j] for i in 1:3, j in 1:3];
+W = [i==j ? one(R) : WW[i,j] for i in 1:3, j in 1:3];
+A = elem_type(R)[zero(R) -one(R) one(R); one(R) zero(R) -one(R); -one(R) one(R) zero(R)];
+F = elem_type(R)[one(R) zero(R) zero(R); zero(R) one(R) zero(R); zero(R) zero(R) one(R)];
+UA = U * A
+WA = W * A
+
+T = matrix(hcat(F, A, U, UA, W, WA)) ##The actual relization in the end rank 3, 18 elements
+T = hcat(F, A, U, UA, W, WA) ##The actual relization in the end rank 3, 18 elements
+
+X1 = hcat(F[:,1],U[:,1],W[:,1]);
+X2 = hcat(A[:,1],UA[:,1],WA[:,1]);
+X3 = hcat(F[:,2],U[:,2],W[:,2]);
+X4 = hcat(A[:,2],UA[:,2],WA[:,2]);
+X5 = hcat(F[:,3],U[:,3],W[:,3]);
+X6 = hcat(A[:,3],UA[:,3],WA[:,3]);
+rels = vcat(get_relations(X1, X2),get_relations(X3, X4),get_relations(X5, X6))
 =#
 
 UA = U * A
@@ -105,6 +112,11 @@ for M in matrices
   push!(det_relations, determinant(M)*z[i] - one(R))
   i += 1;
 end
+
+f1 = determinant(hcat(T[:,9], T[:,15], T[:,6]))
+f2 = determinant(hcat(T[:,15], T[:,5], T[:,11]))
+groebner_basis(ideal([f1,f2]))
+
 =#
 
 function get_det_relsations(UW, z)
@@ -169,6 +181,7 @@ groebner_basis(I, algorithm=:f4)
 =#
 
 #=
+using Oscar
 R, UU, WW = polynomial_ring(QQ, :U => (1:3, 1:3), :W=> (1:3, 1:3))
 U = [i==j ? one(R) : UU[i,j] for i in 1:3, j in 1:3];
 W = [i==j ? one(R) : WW[i,j] for i in 1:3, j in 1:3];
